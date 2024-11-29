@@ -3,7 +3,7 @@ function decompressData(compressedData, compressionMethod) {
     console.log("No compression applied.");
     return compressedData;
   } else if (compressionMethod === 8) {
-    console.log("Decompressing using the Deflate method.");
+    console.log("Decompressing using inflateRaw.");
     return pako.inflateRaw(compressedData);
   } else {
     throw new Error(`Unsupported compression method: ${compressionMethod}`);
