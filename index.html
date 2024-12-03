@@ -4,182 +4,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>boot.img downloader</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crc-32/1.2.0/crc32.min.js"></script>
-    <script src="fetcher.js" defer></script>
-    <script src="parser.js" defer></script>
-    <script src="headers.js"></script>
-    <script src="main.js" defer></script>
+    <title>SLAP Super Lazy Ass Pixel-flasher</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"
+        integrity="sha512-g2TeAWw5GPnX7z0Kn8nFbYfeHcvAu/tx6d6mrLe/90mkCxO+RcptyYpksUz35EO337F83bZwcmUyHiHamspkfg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crc-32/1.2.2/crc32.min.js"
+        integrity="sha512-wIFCkv9+5jtI8PJBBe+UcH7ltv2ML4EXicOQ3zIOhSo3zljjiUkTlHo3n/skt7sYd/IdETcdYw8beIRO0M7XIw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="bootdownloader.js" defer></script>
+    <script src="fastboot.mjs" type="module"></script>
+    <script src="flash.js" type="module"></script>
+    <script src="script.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
-        #logContainer {
+        #console {
+            position: fixed;
+            bottom: 0;
             width: 100%;
-            height: 200px;
-            overflow-y: auto;
-            border: 1px solid #ccc;
             padding: 10px;
-            font-family: monospace;
-            background-color: #f9f9f9;
+            height: 150px;
+            overflow: auto;
         }
 
-        .LOG {
-            color: black;
-        }
-
-        .WARN {
-            color: orange;
-        }
-
-        .ERROR {
-            color: red;
-        }
-
-        .input-group {
-            margin-bottom: 10px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #0056b3;
+        .content {
+            flex: 1;
+            margin-bottom: 150px;
         }
     </style>
+
 </head>
 
 <body>
-    <h1>boot.img downloader</h1>
+    <div id="qrcode"></div>
+    <div class="container content">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="downloader-tab" data-bs-toggle="tab" data-bs-target="#downloader"
+                    type="button" role="tab">Downloader</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="file-transfer-tab" data-bs-toggle="tab" data-bs-target="#file-transfer"
+                    type="button" role="tab">File Transfer</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="flasher-tab" data-bs-toggle="tab" data-bs-target="#flasher" type="button"
+                    role="tab">Flasher</button>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <!-- Downloader Section -->
+            <div class="tab-pane fade show active" id="downloader" role="tabpanel">
+                <div class="mt-4">
+                    <h3>Downloader</h3>
 
-    <h2>How it works</h2>
-    <p>It tries to fetch the zip(s) local file header and end of content directory to locate the position of the
-        corresponding file.</p>
+                    <div class="mb-3">
+                        <label for="urlInput" class="form-label">Factory image URL (.zip):</label>
+                        <input type="text" class="form-control" id="urlInput"
+                            placeholder="Enter the URL of the ZIP file"
+                            value="https://dl.google.com/dl/android/aosp/bluejay-ap2a.240605.024-factory-6fcf1c35.zip">
+                    </div>
+                    <div class="mb-3">
+                        <label for="patternInput" class="form-label">File Pattern (Regex):</label>
+                        <input type="text" class="form-control" id="patternInput"
+                            placeholder="Enter the pattern to match files" value=".*image.*\.zip">
+                    </div>
+                    <div class="mb-3">
+                        <label for="filenameInput" class="form-label">Filename to Extract:</label>
+                        <input type="text" class="form-control" id="filenameInput"
+                            placeholder="Enter the filename to extract" value="boot.img">
+                    </div>
 
-    <p><strong>Note</strong> to fetch from dl.google you need either :
-    <ul>
-        <li>A "no-CORS" proxy (activated by default)</li>
-        <li>
-            A browser without CORS check (for example chromium with --disable-web-security)
-        </li>
-        <li>
-            An extension that adds CORS header
-        </li>
-    </ul>
-    </p>
-    <div class="input-group">
-        <label for="urlInput">Factory image URL (.zip):</label>
-        <input type="text" id="urlInput" placeholder="Enter the URL of the ZIP file"
-            value="https://dl.google.com/dl/android/aosp/bluejay-ap2a.240605.024-factory-6fcf1c35.zip">
+                    <div class="mb-3">
+                        <label for="proxyInput" class="form-label">No CORS proxy:</label>
+                        <input type="text" class="form-control" id="proxyInput" placeholder="(Optional) No CORS proxy"
+                            value="https://no-cors.sylvainfinot.workers.dev/?token=sq8n3tg6ztp3y4t4g38ptbg5hz3g94t6&target=@">
+                    </div>
+
+                    <div class="mb-3">
+                        <input type="checkbox" id="useProxyCheckbox" class="form-check-input" checked="true"> Use Proxy
+                    </div>
+
+                    <button id="processButton" class="btn btn-primary">Download</button>
+                </div>
+            </div>
+
+            <!-- File Transfer Section -->
+            <div class="tab-pane fade" id="file-transfer" role="tabpanel">
+                <div class="mt-4">
+                    <h3>File Transfer</h3>
+                    <h5>Upload</h5>
+                    <div class="mb-3">
+                        <label for="fileInput" class="form-label">Your file (25Mo max after deflate):</label>
+                        <input type="file" class="form-control" id="fileInput">
+                    </div>
+
+                    <button class="btn btn-primary" id="uploadFile">Generate Code</button>
+                    <div class="mt-3">
+                        <p>Generated Code: <span id="generated-code"></span></p>
+                    </div>
+
+                    <h5>Download</h5>
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="downloadCode" placeholder="Enter Code">
+                    </div>
+                    <button class="btn btn-primary" id="downloadFile">Download File</button>
+                </div>
+            </div>
+            <!-- Flasher Section -->
+            <div class="tab-pane fade" id="flasher" role="tabpanel">
+                <div class="mt-4">
+                    <h3>Flasher</h3>
+                    <div class="mb-3">
+                        <p>Status: <span class="status-field">Not connected</span></p>
+                        <button class="connect-button btn btn-primary">Connect device</button>
+                    </div>
+
+                    <div>
+                        <form class="flash-form">
+                            <div class="mb-3">
+                                <label for="boot-file" class="form-label">Boot image:</label>
+                                <input type="file" name="boot-file" id="boot-file" class="boot-file form-control" />
+                            </div>
+                            <button class="boot-button btn btn-primary">Reboot on image</button>
+                            <button class="flash-button btn btn-warning">Flash and reboot</button>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="input-group">
-        <label for="patternInput">File Pattern (Regex):</label>
-        <input type="text" id="patternInput" placeholder="Enter the pattern to match files" value=".*image.*\.zip">
-    </div>
-    <div class="input-group">
-        <label for="filenameInput">Filename to Extract:</label>
-        <input type="text" id="filenameInput" placeholder="Enter the filename to extract" value="boot.img">
+    <!-- Console -->
+    <div id="console" class="bg-light-subtle border-top">
+        <h5>Console</h5>
+        <pre id="console-output">Logs will appear here...</pre>
     </div>
 
-    <div class="input-group">
-        <label for="proxyInput">No CORS proxy:</label>
-        <input type="text" id="proxyInput" placeholder="(Optional) No CORS proxy"
-            value="https://no-cors.sylvainfinot.workers.dev/?token=sq8n3tg6ztp3y4t4g38ptbg5hz3g94t6&target=@">
-    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
 
-    <div class="input-group">
-        <label>
-            <input type="checkbox" id="useProxyCheckbox" checked="true"> Use Proxy
-        </label>
-    </div>
-
-    <button id="processButton">Download</button>
-
-    <h2>Console Logs</h2>
-    <div id="logContainer"></div>
-
-    <script>
-        const logContainer = document.getElementById('logContainer');
-
-        const originalLog = console.log;
-        const originalWarn = console.warn;
-        const originalError = console.error;
-
-        console.log = function (...messages) {
-            handleLog("LOG", messages);
-            originalLog.apply(console, messages);
-        };
-
-        console.warn = function (...messages) {
-            handleLog("WARN", messages);
-            originalWarn.apply(console, messages);
-        };
-
-        console.error = function (...messages) {
-            handleLog("ERROR", messages);
-            originalError.apply(console, messages);
-        };
-
-        function handleLog(type, messages) {
-            const logEntry = document.createElement('div');
-            logEntry.className = type;
-
-            const formattedMessages = messages
-                .map(msg => (typeof msg === 'object' ? JSON.stringify(msg, null, 2) : msg))
-                .join(' ');
-
-            logEntry.textContent = `[${type.toUpperCase()}] ${formattedMessages}`;
-            logContainer.appendChild(logEntry);
-
-            logContainer.scrollTop = logContainer.scrollHeight;
-        }
-
-        const urlInput = document.getElementById('urlInput');
-        const patternInput = document.getElementById('patternInput');
-        const filenameInput = document.getElementById('filenameInput');
-        const processButton = document.getElementById('processButton');
-        const proxyInput = document.getElementById('proxyInput');
-        const useProxyCheckbox = document.getElementById('useProxyCheckbox');
-
-
-        processButton.addEventListener('click', async () => {
-            const url = urlInput.value;
-            const patternText = patternInput.value;
-            const filename = filenameInput.value;
-            const proxyurl = proxyInput.value;
-            const useProxy = useProxyCheckbox.checked;
-
-            try {
-                const pattern = new RegExp(patternText);
-                const finalUrl = useProxy ? proxyurl.replace('@', url) : url;
-                await main(finalUrl, pattern, filename);
-            } catch (error) {
-                console.error("An error occurred:", error.message || error);
-            }
-        });
-    </script>
 </body>
 
 </html>
