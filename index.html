@@ -48,7 +48,11 @@
     <div class="container content">
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="downloader-tab" data-bs-toggle="tab" data-bs-target="#downloader"
+                <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button"
+                    role="tab">Info</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="downloader-tab" data-bs-toggle="tab" data-bs-target="#downloader"
                     type="button" role="tab">Downloader</button>
             </li>
             <li class="nav-item" role="presentation">
@@ -61,8 +65,47 @@
             </li>
         </ul>
         <div class="tab-content">
+            <div class="tab-pane fade show active" id="info" role="tabpanel">
+                <div class="mt-4">
+                    <h3>Info</h3>
+
+                    <div>
+                        Update notes
+                        <ol>
+                            <li>Do the OTA and reboot (check for update after, in case there are several to do)</li>
+                            <li>Get the corresponding image here <a
+                                    href="https://developers.google.com/android/images">https://developers.google.com/android/images</a>
+                            </li>
+                            <li>Extract the <code>boot.img</code> file</li>
+                            <li>Put it on the phone and patch it (e.g
+                                <code>adb push .\boot.img /storage/emulated/0/Download/</code>)</li>
+                            <li>Get it back on your computer (e.g
+                                <code>adb pull /storage/emulated/0/Download/magisk_patched-VVVVVVV_XXXXX.img</code>)
+                            </li>
+                            <li>Reboot to fastboot for example with <code>adb reboot bootloader</code></li>
+                            <li>Flash with <code>fastboot flash boot .\magisk_patched-VVVVVVV_XXXXX.img</code></li>
+                            <li>Reboot with <code>fastboot reboot</code></li>
+                        </ol>
+
+                        <ul>
+                            <li>Steps 2 and 3 can be done with Downloader</li>
+                            <li>Step 4 and 5 can be done with File Transfer</li>
+                            <li>Step 6 can be done by holding volume down and then tuning on the phone</li>
+                            <li>Step 7 & 8 can be done with Flasher</li>
+                        </ul>
+
+                    </div>
+
+                    <h3>Useful links</h3>
+                    <ul>
+                        <li><a href="https://developers.google.com/android/images">Google images</a></li>
+                        <li><a href="https://developer.android.com/tools/releases/platform-tools#downloads">SDK
+                                Platform-Tools</a></li>
+                    </ul>
+                </div>
+            </div>
             <!-- Downloader Section -->
-            <div class="tab-pane fade show active" id="downloader" role="tabpanel">
+            <div class="tab-pane fade" id="downloader" role="tabpanel">
                 <div class="mt-4">
                     <h3>Downloader</h3>
 
