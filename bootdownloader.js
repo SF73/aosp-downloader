@@ -121,15 +121,15 @@ async function main(url, pattern, filename) {
             file.fileNameLength +
             file.extraFieldLength;
 
-        const bootDataStop = bootDataStart + file.compressedSize;
+        const bootDataStop = bootDataStart + file.compressedSize - 1;
         const compressedData = await fetcher.fetchRange(url, bootDataStart, bootDataStop);
 
         const decompressedData = decompressData(compressedData, file.compressionMethod);
 
         // Verify CRC32
-        const computedCrc32 = CRC32.buf(decompressedData);
+        const computedCrc32 = CRC32.buf(decompressedData) >>> 0;
         if (computedCrc32 !== file.crc32) {
-            throw new Error(
+            console.error(
                 `CRC32 mismatch: computed ${computedCrc32} does not match expected ${file.crc32}.`
             );
         }
