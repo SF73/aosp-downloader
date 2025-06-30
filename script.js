@@ -51,7 +51,7 @@ window.addEventListener("load", () => {
         try {
             const pattern = new RegExp(patternText);
             const finalUrl = useProxy ? proxyurl.replace('@', url) : url;
-            await main(finalUrl, pattern, filename);
+            await main(finalUrl, pattern, filename, url);
         } catch (error) {
             console.error("An error occurred:", error.message || error);
         }

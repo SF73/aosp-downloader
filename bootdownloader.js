@@ -22,7 +22,11 @@ function saveFile(filename, data) {
     URL.revokeObjectURL(url);
 }
 
-async function main(url, pattern, filename) {
+function genPythonCommand(url, start, stop, crc32) {
+    return `python -c "import urllib.request as u,zlib as z,binascii as b;r=u.urlopen(u.Request('${url}',headers={'Range':'bytes=${start}-${stop}'}));d=z.decompress(r.read(),-15);c=b.crc32(d)&0xffffffff;e=${crc32};print('CRC32: %08x should be %08x'%(c, e));open('boot.img','wb').write(d)"`
+}
+
+async function main(url, pattern, filename, rawUrl) {
     const fetcher = new RemoteFileFetcher();
     const parser = new ZipCentralDirectoryParser();
 
@@ -137,6 +141,8 @@ async function main(url, pattern, filename) {
         // Save the file
         console.log(`Saving file: ${file.fileName}`);
         saveFile(file.fileName, decompressedData);
+        console.log(`Python command to download and decompress the file:`);
+        console.log(genPythonCommand(rawUrl, bootDataStart, bootDataStop, file.crc32));
         console.log(`File "${file.fileName}" saved successfully.`);
     } catch (error) {
         console.error("Error:", error.message || error);
